@@ -32,9 +32,13 @@ My Sites:
 
 
 1.) In Preferences set as client Filezilla
+
 2.) click update FTP list
+
 3.) click "SAVE" and close preferences
+
 4.) open terminal
+
 5.) run command: gsettings get org.cinnamon.extensions.extended.places-menu ftp-list
     you will get this output: ['server1', 'server2', 'server3', 'server4']
 
@@ -43,6 +47,7 @@ My Sites:
      gsettings set org.gnome.shell.extensions.places-menu-extended ftp-list "['server1', 'server2', 'NewFolder/server3', 'NewFolder/NewFolder2/server4']"
 
 7.) remember if you click on "Update FTP" button in preferences, this list will be overwrited again (so is better to have sites in root folder on "SITE MANAGER"
+
 8.) ALT+F2 type r and enter
 
 
