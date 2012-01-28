@@ -1,0 +1,185 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: places-menu-extended\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: jgv <jgvnet@gmail.com>\n"
+"Language-Team: \n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Dutch\n"
+"X-Poedit-Country: NETHERLANDS\n"
+
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#: epmupdater:36
+msgid "Actions List"
+msgstr "Actielijst"
+
+#: epmupdater:37
+msgid "General Settings"
+msgstr "Algemene instellingen"
+
+#: epmupdater:38
+msgid "Display Name"
+msgstr "Naam voor locatie-menu"
+
+#: epmupdater:39
+msgid "Action (path for script or command)"
+msgstr "Actie (pad voor script of opdracht)"
+
+#: epmupdater:40
+msgid "SSH List"
+msgstr "SSH-lijst"
+
+#: epmupdater:41
+msgid "Application e.g(gnome-terminal,terminator,rdesktop,putty)"
+msgstr "Toepassing bijv. (gnome-terminal,terminator,rdesktop,putty)"
+
+#: epmupdater:42
+msgid "Params and args e.g(-x ssh root@google.com)"
+msgstr "Parameters en argumenten bijv. (-x ssh root@google.com)"
+
+#: epmupdater:43
+msgid "Application"
+msgstr "Toepassing"
+
+#: epmupdater:44
+msgid "Params and args"
+msgstr "Parameters en argumenten"
+
+#: epmupdater:165
+msgid "Preferences"
+msgstr "Voorkeuren"
+
+#: epmupdater:268
+#: epmupdater:280
+#: epmupdater:285
+msgid "Done !"
+msgstr "Klaar!"
+
+#: epmupdater:268
+msgid "Your VirtualBox menu has been updated."
+msgstr "Het VirtualBox-menu is bijgewerkt"
+
+#: epmupdater:280
+msgid "Your FTP menu has been updated."
+msgstr "Het FTP-menu is bijgewerkt"
+
+#: epmupdater:285
+msgid "Your menu has been updated."
+msgstr "Locatie-menu is bijgewerkt"
+
+#: epmupdater:342
+#: epmupdater:452
+msgid "Add"
+msgstr "Toevoegen"
+
+#: epmupdater:343
+#: epmupdater:453
+msgid "Remove"
+msgstr "Verwijderen"
+
+#: epmupdater:344
+msgid "Examples for params"
+msgstr "Voorbeelden van parameters"
+
+#: epmupdater:359
+msgid "Examples"
+msgstr "Voorbeelden"
+
+#: epmupdater:397
+#: epmupdater:519
+msgid "Display name in menu"
+msgstr "Naam voor locatie-menu"
+
+#: epmupdater:524
+msgid "Command or script path"
+msgstr "Pad voor opdracht of script"
+
+#: epmupdater:525
+msgid "Browse"
+msgstr "Bladeren"
+
+#: epmupdater:541
+msgid "Select App or script"
+msgstr "Toepassing of script kiezen"
+
+#: epmupdater:632
+msgid "Set Position"
+msgstr "Positie instellen"
+
+#: epmupdater:635
+msgid "Left"
+msgstr "Links"
+
+#: epmupdater:641
+msgid "Right"
+msgstr "Rechts"
+
+#: epmupdater:656
+msgid "Enable / Disable Computer Menu"
+msgstr "\"Computer\" in menu opnemen"
+
+#: epmupdater:667
+msgid "Enable / Disable VirtualBox Menu"
+msgstr "\"VirtualBox\" in menu opnemen"
+
+#: epmupdater:679
+msgid "Open File System as Root"
+msgstr "Bestandssysteem openen als beheerder in menu opnemen"
+
+#: epmupdater:691
+msgid "Show Bookmarks Collapsed (ON) / Expanded (OFF)"
+msgstr "Bladwijzers ingevouwen (AAN) / uitgevouwen (UIT) tonen"
+
+#: epmupdater:702
+msgid "Show Actions Menu"
+msgstr "Actielijst in menu opnemen"
+
+#: epmupdater:713
+msgid "Show SSH Menu"
+msgstr "SSH-lijst in menu opnemen"
+
+#: epmupdater:754
+msgid "To take effect, click the save button to get changes instantly"
+msgstr "Klik op \"Opslaan\" om de wijzigingen direct door te voeren"
+
+#: epmupdater:757
+msgid "Save"
+msgstr "Opslaan"
+
+#: extension.js:83
+msgid "Bookmarks"
+msgstr "Bladwijzers"
+
+#: extension.js:93
+#: extension.js:375
+msgid "VirtualBox"
+msgstr "VirtualBox"
+
+#: extension.js:124
+msgid "SSH Plus"
+msgstr "SSH Plus"
+
+#: extension.js:135
+msgid "Actions"
+msgstr "Acties"
+
+#: extension.js:145
+msgid "Removable Devices"
+msgstr "Verwisselbare media"
+
+#: extension.js:151
+msgid "Preferences          "
+msgstr "Voorkeuren"
+
+#: ../js/ui/placeDisplay.js:165
+msgid "Connect to..."
+msgstr "Verbinden met..."
+

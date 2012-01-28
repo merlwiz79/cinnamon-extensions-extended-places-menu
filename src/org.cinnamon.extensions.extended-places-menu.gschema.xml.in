@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="cinnamon-extensions-extended-places-menu">
+  <enum id='org.cinnamon.extensions.extended-places-menu.FtpMode'>
+    <value value='0' nick='Filezilla'/>
+    <value value='1' nick='gFTP'/>
+    <value value='2' nick='none'/>
+  </enum>
+  <enum id='org.cinnamon.extensions.extended-places-menu.OpenFileSystemMod'>
+    <value value='0' nick='user'/>
+    <value value='1' nick='root'/>
+  </enum>
+  <enum id='org.cinnamon.extensions.extended-places-menu.BookmarksState'>
+    <value value='0' nick='expanded'/>
+    <value value='1' nick='collapsed'/>
+  </enum>
+  <enum id='org.cinnamon.extensions.extended-places-menu.Position'>
+    <value value='0' nick='right'/>
+    <value value='1' nick='left'/>
+  </enum>
+
+  <schema path="/org/cinnamon/extensions/extended-places-menu/" id="org.cinnamon.extensions.extended-places-menu">
+    <key name="ftpclient" enum="org.cinnamon.extensions.extended-places-menu.FtpMode">
+      <default>'none'</default>
+      <_summary>Menu item for FTP client</_summary>
+      <_description>Sets the FTP client to show in menu. Allowed values are 'gFTP','Filezilla' or 'none'</_description>
+    </key>
+    <key name="filesystemopen" enum="org.cinnamon.extensions.extended-places-menu.OpenFileSystemMod">
+      <default>'root'</default>
+      <_summary>Way to open File Sytem menu item</_summary>
+      <_description>Sets the option how to open the FileSystem menu item. Allowed values are 'user' or 'root'</_description>
+    </key>
+    <key name="bookmarksstate" enum="org.cinnamon.extensions.extended-places-menu.BookmarksState">
+      <default>'collapsed'</default>
+      <_summary>Bookmarks menu state</_summary>
+      <_description>Sets state of bookmarks menu. Allowed values are 'collapsed' or 'expanded'</_description>
+    </key>
+    <key name="position" enum="org.cinnamon.extensions.extended-places-menu.Position">
+      <default>'right'</default>
+      <_summary>Extension position</_summary>
+      <_description>Sets position of extension. Allowed values are 'right' or 'left'</_description>
+    </key>
+    <key type="b" name="show-computer">
+      <default>true</default>
+      <_summary>Show/Hide Computer menu item</_summary>
+    </key>
+    <key type="b" name="virtualbox">
+      <default>false</default>
+      <_summary>Show/Hide VirtualBox menu</_summary>
+    </key>
+    <key type="b" name="actions">
+      <default>false</default>
+      <_summary>Show/Hide Actions menu</_summary>
+    </key>
+    <key type="b" name="sshopen">
+      <default>false</default>
+      <_summary>Show/Hide SSH menu</_summary>
+    </key>
+    <key type="as" name="vbox-list">
+      <default>[]</default>
+      <_summary>List of VirtualBox VM's</_summary>
+    </key>
+    <key type="as" name="actions-list">
+      <default>[]</default>
+      <_summary>List of custom actions</_summary>
+    </key>
+    <key type="as" name="ftp-list">
+      <default>[]</default>
+      <_summary>List of imported FTP sites</_summary>
+    </key>
+    <key type="as" name="ssh-list">
+      <default>[]</default>
+      <_summary>List of imported SSH commands</_summary>
+    </key>
+  </schema>
+</schemalist>

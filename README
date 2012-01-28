@@ -1,0 +1,30 @@
+How to import sites from Filezilla "SITE MANAGER" when I am using sub-folders in "SITE MANAGER" ?
+
+
+Examplelook of "SITE MANAGER":
+
+My Sites:
+  - server1
+  - server2
+  - NewFolder
+      - server3
+      - NewFolder2
+         -server4
+
+
+
+
+1.) In Preferences set as client Filezilla
+2.) click update FTP list
+3.) click "SAVE" and close preferences
+4.) open terminal
+5.) run command: gsettings get org.cinnamon.extensions.extended.places-menu ftp-list
+
+you will get this output: ['server1', 'server2', 'server3', 'server4']
+
+6.) to fix it run the following command:
+    
+     gsettings set org.gnome.shell.extensions.places-menu-extended ftp-list "['server1', 'server2', 'NewFolder/server3', 'NewFolder/NewFolder2/server4']"
+
+7.) remember if you click on "Update FTP" button in preferences, this list will be overwrited again (so is better to have sites in root folder on "SITE MANAGER"
+8.) ALT+F2 type r and enter

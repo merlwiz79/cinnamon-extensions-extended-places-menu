@@ -1,0 +1,8 @@
+{
+"uuid": "@uuid@",
+"name": "Extended Places Status Indicator",
+"description": "Add a systems status menu for quickly navigating places in the system, with access of FTP bookmarks and VirtualBox VM's",
+"cinnamon-version": [ "1.1.3", "@cinnamon_current@" ],
+"localedir": "@LOCALEDIR@",
+"url": "@url@"
+}

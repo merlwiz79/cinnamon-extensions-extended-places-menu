@@ -1,0 +1,4 @@
+js/placeDisplay.js
+policy/org.freedesktop.policykit.pkexec.cinnamon.nautilus-run.policy.in
+src/extension.js
+src/org.cinnamon.extensions.extended-places-menu.gschema.xml.in

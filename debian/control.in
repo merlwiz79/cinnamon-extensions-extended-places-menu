@@ -1,0 +1,22 @@
+Source: cinnamon-extensions-extended-places-menu
+Section: gnome
+Priority: extra
+Maintainer: merlwiz79 <mintmerlwiz79@gmail.com>
+Build-Depends: debhelper (>= 7),
+ cdbs,
+ gnome-pkg-tools,
+ intltool,
+ libglib2.0-dev,
+ libpolkit-gobject-1-dev (>= 0.97),
+ libgnome-desktop-3-dev (>= 2.91.6),
+ python (>= 2.6.5)
+Standards-Version: 3.9.2
+Homepage: https://github.com/merlwiz79/cinnamon-extensions-extended-places-menu
+
+Package: cinnamon-extensions-extended-places-menu
+Architecture: all
+Depends: ${misc:Depends}, cinnamon, python (>= 2.6.5)
+Description: Extended places menu extension for cinnamon
+ The extension extends the Places Menu extension with some useful additional items
+ .
+ cinnamon-extensions-extended-places-menu is a simple extension for displaying an extended places menu.

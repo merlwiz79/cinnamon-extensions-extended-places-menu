@@ -1,0 +1,767 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os
+import subprocess
+import glob
+import re
+import getopt
+import sys
+import time
+
+from gi.repository import Gtk
+from gi.repository import Gio
+from gi.repository import GLib
+
+import gettext
+from gettext import gettext as _
+gettext.textdomain('cinnamon-extensions-extended-places-menu')
+
+BASE_KEY = "org.cinnamon.extensions.extended-places-menu"
+settings = Gio.Settings.new(BASE_KEY)
+settings2 = Gio.Settings.new("org.cinnamon")
+rcx = settings.get_boolean("virtualbox") 
+rcxc = settings.get_boolean("show-computer") 
+rcx1 = settings.get_string("bookmarksstate") 
+rcx2 = settings.get_string("filesystemopen")   
+rcx3 = settings.get_string("ftpclient")
+rcx4 = settings.get_boolean("actions") 
+rcx5 = settings.get_string("position")
+rcx6 = settings.get_boolean("sshopen")
+subprocess.Popen("VBoxManage list vms | sed -e 's/^.*\\\"\(.*\)\\\".*$/\\1/' > /tmp/epmvirtual", shell=True)
+
+ACLIST = _("Actions List")
+GLIST = _("General Settings")
+DISPLAYNAME = _("Display Name")
+ACLISTMESSAGE = _("Action (path for script or command)")
+SSHLIST = _("SSH List")
+SSHAPP = _("Application e.g(gnome-terminal,terminator,rdesktop,putty)")
+SSHCOM = _("Params and args e.g(-x ssh root@google.com)")
+SSHAPP1 = _("Application")
+SSHCOM1 = _("Params and args")
+
+SSHEXAMPLES = ("SSH\n\n"
+              "-x ssh root@google.com\n\n\n"
+              "Rdesktop1\n\n"
+              "-T \"Win Server\" 1.2.3.4\n\n\n"
+              "Rdesktop2\n\n"
+              "-g 1320×680 -T \"Win-Server 3\" -x l -P -r sound:local 1.5.3.8\n\n\n"
+              "Putty\n\n"
+              "-load SavedSession1")
+
+
+
+if rcx3 == "Filezilla": os.system("awk 'NR>1{print $1}' RS='<Name>' FS='</Name>' ~/.filezilla/sitemanager.xml > /tmp/ftplist")
+if rcx3 == "gFTP": os.system("awk 'NR>1{print $1}' RS=[ FS=] ~/.gftp/bookmarks > /tmp/ftplist")
+
+def get_list(key, s):
+    act = s.get_value(key)
+    return act.get_type_string()
+
+def textList(listtext, sep1=',', sep2=','):
+        return (len(listtext) > 1 
+        and ("%s%s%s" % (sep1.join(listtext[:-1]), sep2, listtext[-1])) 
+        or listtext[0])
+
+
+def list_values(key):
+    vals = settings[key]
+    return textList(vals)
+
+
+def add_to_list(key, value, s):
+    assert get_list(key, s)
+    vals = s[key]
+    if value not in vals:
+        vals.append(value)
+        s[key] = vals
+        return True
+
+
+def remove_from_list(key, value, s):
+    assert get_list(key, s)
+    vals = s[key]
+    try:
+        vals.remove(value)
+        s[key] = vals
+        return True
+    except ValueError:
+        pass
+
+
+
+def clean_list(key):
+    os.system("gsettings set "+BASE_KEY+" "+key+" []")
+
+
+
+class ConfigOptions:
+    def __init__(self):
+        self.monitorfeeds = []
+        self.monitorfeeds2 = []
+
+    def getMonitorFeeds(self): return self.monitorfeeds
+    def getMonitorFeeds2(self): return self.monitorfeeds2
+    def addMonitorFeed(self, feed): 
+        self.monitorfeeds.append(feed)
+        ff = feed[0]+':'+feed[1]
+        add_to_list("actions-list",ff, settings)
+
+    def addMonitorFeed2(self, feed): 
+        self.monitorfeeds2.append(feed)
+        ff = feed[0]+'|'+feed[1]+'|'+feed[2]
+        add_to_list("ssh-list",ff, settings)
+
+
+    def removeMonitorFeed(self, index, feed1, feed2): 
+        k = int(str(index))
+        self.monitorfeeds.pop(k)
+        ff = feed1+':'+feed2
+        remove_from_list("actions-list", ff, settings)
+
+    def removeMonitorFeed2(self, index, feed1, feed2, feed3): 
+        k = int(str(index))
+        self.monitorfeeds2.pop(k)
+        ff = feed1+'|'+feed2+'|'+feed3
+        remove_from_list("ssh-list", ff, settings)
+
+
+    def getConfigFile(self):
+        checklist = settings["actions-list"]
+        checklist2 = settings["ssh-list"]
+        if checklist == []:
+            self.monitorfeeds = []
+            return
+        else:
+            alist = list_values("actions-list")        
+            for line in alist.split(','):
+                key = line.split(':')
+                feedItem = (key[0], key[1].strip())
+                self.monitorfeeds.append(feedItem)
+        if checklist2 == []:
+            self.monitorfeeds2 = []
+            return
+        else:
+            alist = list_values("ssh-list")        
+            for line in alist.split(','):
+                key = line.split('|')
+                feedItem = (key[0], key[1], key[2].strip())
+                self.monitorfeeds2.append(feedItem)
+
+
+class epmUpdater(Gtk.Window):
+    TABS = [{'label':GLIST, 'content':'1'},{'label':ACLIST, 'content':'2'}, {'label':SSHLIST, 'content':'3'}]
+    CELL3 = [{'content':DISPLAYNAME, 'pos':'0'}, {'content':ACLISTMESSAGE, 'pos':'1'}]
+    CELL4 = [{'content':DISPLAYNAME, 'pos':'0'}, {'content':SSHAPP1, 'pos':'1'}, {'content':SSHCOM1, 'pos':'2'}]
+
+
+    def __init__(self):
+        super(epmUpdater, self).__init__()
+        self.configuration = ConfigOptions()
+        self.configuration.getConfigFile()
+        self.set_title(_("Preferences"))
+        self.set_default_size(850, 750)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.ftpInd = Gtk.Entry()
+        self.ftpInd.set_text(rcx3)
+        self.connect("destroy", Gtk.main_quit)
+        self.notebook = Gtk.Notebook()
+        self.notebook.set_tab_pos(Gtk.PositionType.LEFT)
+        self.notebook.set_scrollable(True)
+
+        for tab in self.TABS:
+            frame, tab_box = self.make_tab(tab['label'], tab['content'])
+            tb = tab['label']
+            tab_box.show_all()
+            self.notebook.append_page(frame, tab_box)
+        self.add(self.notebook)
+        self.show_all()
+
+    def make_tab(self, label, content):
+        frame = Gtk.Frame()
+        frame.set_border_width(0)
+        box = Gtk.HBox(False, 0)
+        box.set_border_width(0)
+        frame.add(box)    
+        if content == "1": box.pack_start(self.Customize2(), True, True, 10)    
+        if content == "2": box.pack_start(self.ActionsList(), True, True, 10) 
+        if content == "3": box.pack_start(self.SshList(), True, True, 10)    
+        lab = label
+
+        tab_box = Gtk.HBox(False, 10)
+        tab_label = Gtk.Label(lab)
+        tab_label.set_padding(5, 5)
+        tab_label.set_alignment(0, 0)
+        tab_box.pack_start(tab_label, True, True, 10)
+        return (frame, tab_box)        
+
+
+
+    def _on_option_toggled(self, sw, active, opt):
+        if opt == "actions":
+            if not sw.get_active():
+                settings.set_boolean("actions", False)
+            else:
+                settings.set_boolean("actions", True)
+        if opt == "sshopen":
+            if not sw.get_active():
+                settings.set_boolean("sshopen", False)
+            else:
+                settings.set_boolean("sshopen", True)
+        if opt == "virtualbox":
+            if not sw.get_active():
+                clean_list("vbox-list")
+                settings.set_boolean("virtualbox", False)
+            else:
+                settings.set_boolean("virtualbox", True)
+                
+                for line in open('/tmp/epmvirtual','r'):
+                    add_to_list("vbox-list",line.strip(), settings)
+
+        if opt == "show-computer":
+            if not sw.get_active():
+                settings.set_boolean("show-computer", False)
+            else:
+                settings.set_boolean("show-computer", True)
+                                
+        if opt == "filesystemopen":
+            if not sw.get_active():
+                settings.set_string("filesystemopen", "user")
+            else:
+                settings.set_string("filesystemopen", "root")
+        if opt == "bookmarksstate":
+            if not sw.get_active():
+                settings.set_string("bookmarksstate", "expanded")
+            else:
+                settings.set_string("bookmarksstate", "collapsed")
+
+    def make_label_with_markup(self, content, alig, alig2):
+        label = Gtk.Label()
+        label.set_markup("<span font_weight='bold' color='#000000'>"+content+"</span>")
+        label.set_alignment(int(alig), int(alig2))
+        return label
+
+
+    def new_sbutton(self, icon, label, callbackstr):
+        btn = Gtk.Button(label=None)
+        hbox = Gtk.HBox(False, 0)
+        btn.add(hbox)
+        img = Gtk.Image()
+        img.set_from_stock(icon, 22)
+        hbox.add(img)
+        label = Gtk.Label(label)
+        label.set_padding(3, 0)
+        hbox.add(label)
+        btn.connect("clicked", self.sbutton_callback, callbackstr)
+        return btn
+
+
+
+    def sbutton_callback(self, widget, data):
+        if data == "1": 
+            clean_list("vbox-list")
+            for line in open('/tmp/epmvirtual','r'):
+                add_to_list("vbox-list", line.strip(), settings)
+            self.dialog(_('Done !'),_('Your VirtualBox menu has been updated.'), widget, Gtk.MessageType.INFO)
+        if data == "2":
+            clean_list("ftp-list")
+            f_ind = self.ftpInd.get_text()
+            if f_ind == "gFTP":                
+                os.system("awk 'NR>1{print $1}' RS=[ FS=] ~/.gftp/bookmarks > /tmp/ftplist")
+                
+            if f_ind == "Filezilla":
+                os.system("awk 'NR>1{print $1}' RS='<Name>' FS='</Name>' ~/.filezilla/sitemanager.xml > /tmp/ftplist")  
+                
+            for line in open('/tmp/ftplist','r'):
+                add_to_list("ftp-list", line.strip(), settings)
+            self.dialog(_('Done !'),_('Your FTP menu has been updated.'), widget, Gtk.MessageType.INFO)
+        if data == "3":
+            remove_from_list("enabled-extensions", "extended-places-menu@cinnamon.org", settings2)
+            time.sleep(2)
+            add_to_list("enabled-extensions", "extended-places-menu@cinnamon.org", settings2)
+            self.dialog(_('Done !'),_('Your menu has been updated.'), widget, Gtk.MessageType.INFO)
+
+
+    def toggle_radio(self, radiobutton, mid, sett=None):  
+        if sett == "position":
+            if radiobutton.get_active():
+                settings.set_string("position", mid)            
+
+        if sett == "ftpclient":
+            if radiobutton.get_active():
+                settings.set_string("ftpclient", mid)
+                if mid == "gFTP":
+                    clean_list("ftp-list")
+                    os.system("awk 'NR>1{print $1}' RS=[ FS=] ~/.gftp/bookmarks > /tmp/ftplist")
+                    for line in open('/tmp/ftplist','r'):
+                        add_to_list("ftp-list", line.strip(), settings)
+                if mid == "Filezilla":
+                    clean_list("ftp-list")
+                    os.system("awk 'NR>1{print $1}' RS='<Name>' FS='</Name>' ~/.filezilla/sitemanager.xml > /tmp/ftplist")
+                    for line in open('/tmp/ftplist','r'):
+                        add_to_list("ftp-list", line.strip(), settings)
+                if mid == "none": clean_list("ftp-list")
+            self.ftpInd.set_text(mid)
+
+
+    def dialog(self, label, text, widget, type=Gtk.MessageType.INFO):
+        md = Gtk.MessageDialog(self, 0,
+                               type, 
+                               Gtk.ButtonsType.OK)
+        md.set_markup('<span font_weight="bold" color="#000000">%s</span>\n\n%s'%(label, text))
+        md.run()
+        md.destroy()      
+
+ 
+
+
+
+    
+
+#
+    def SshList(self):
+        bbox = Gtk.HBox()
+        bbox.set_spacing(5)
+        bbox.set_border_width(10)
+        mscroll = Gtk.ScrolledWindow()
+        mscroll.set_size_request(600, 400)
+        vbox = Gtk.VBox(False, 5)
+        vbox.pack_start(mscroll, False, True, 5)
+
+
+        self.store2 = self.create_model2()
+        self.treeView2 = Gtk.TreeView(self.store2)
+        self.treeView2.set_rules_hint(True)
+        mscroll.add(self.treeView2)
+
+        self.create_columns2(self.treeView2)
+        tool6 = Gtk.HBox()
+        tool6.pack_start(self.button_clicked(Gtk.STOCK_ADD, _("Add"), self.on_add_clicked2), False, True, 5)
+        tool6.pack_start(self.button_clicked(Gtk.STOCK_REMOVE, _("Remove"), self.on_remove_clicked2), False, True, 5)
+        tool6.pack_start(self.button_clicked(Gtk.STOCK_INFO, _("Examples for params"), self.help), False, True, 5)
+        vbox.pack_start(tool6, False, True, 0)
+        bbox.add(vbox)
+        self.updateMonitorFeedsListView2()
+        return bbox
+
+    def create_model2(self):
+        store = Gtk.ListStore(str, str, str)
+        return store
+
+
+    def on_add_clicked2(self, widget):
+        self.addMonitorFeed2()
+
+    def help(self, widget):
+        self.dialog(_('Examples'), SSHEXAMPLES, widget, Gtk.MessageType.INFO)
+
+    def on_remove_clicked2(self, widget):
+        self.removeSelectedMonitorFeed2(widget)
+
+
+    def addMonitorFeed2(self):
+        result = self.showAddMonitorFeedDialog2()
+        response = result[0]
+        feed = (result[1], result[2], result[3])
+        if(response == Gtk.ResponseType.OK):
+            self.configuration.addMonitorFeed2(feed)
+            self.updateMonitorFeedsListView2()
+
+
+    def removeSelectedMonitorFeed2(self, treeiter):
+        selection = self.treeView2.get_selection()
+        if (selection !=None):
+            model, treeiter = selection.get_selected()
+            if treeiter != None:
+                index = model.get_path(treeiter)
+                index2 = model.get_value(treeiter, 0)
+                index3 = model.get_value(treeiter, 1)
+                index4 = model.get_value(treeiter, 2)
+                self.configuration.removeMonitorFeed2(index, index2, index3, index4)
+                self.updateMonitorFeedsListView2()
+
+
+
+    def showAddMonitorFeedDialog2(self):
+        dialog = Gtk.MessageDialog(
+                self,
+                0,
+                Gtk.MessageType.QUESTION,
+                Gtk.ButtonsType.OK_CANCEL,
+                None)
+
+        feed_title_entry = self.make_add_entry("SSH Server1", True)
+        dialog.vbox.pack_start(self.make_label_with_markup(_("Display name in menu"), 0, 0), False, True, 5)
+        dialog.vbox.pack_start(feed_title_entry, False, True, 5)
+        dialog.vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        feed_action_entry = self.make_add_entry("gnome-terminal", True)
+        dialog.vbox.pack_start(self.make_label_with_markup(SSHAPP, 0, 0), False, True, 5)
+        dialog.vbox.pack_start(feed_action_entry, False, True, 5)
+        dialog.vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        param_action_entry = self.make_add_entry("-x ssh root@google.com", True)
+        dialog.vbox.pack_start(self.make_label_with_markup(SSHCOM, 0, 0), False, True, 5)
+        dialog.vbox.pack_start(param_action_entry, False, True, 5)
+        dialog.vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+        dialog.show_all()
+
+        response = dialog.run()
+        feed_name = feed_title_entry.get_text()
+        feed_url = feed_action_entry.get_text()
+        feed_arg = param_action_entry.get_text()
+        dialog.destroy()
+        return (response, feed_name, feed_url, feed_arg)
+
+
+    def updateMonitorFeedsListView2(self):
+        self.store2.clear()
+        for name in self.configuration.getMonitorFeeds2():
+            self.store2.append(name)
+
+    def create_columns2(self, treeView):
+        for cell in self.CELL4:
+            column = self.make_cellrenderer(cell['content'], cell['pos'])
+            treeView.append_column(column)    
+
+
+
+#
+
+
+    def ActionsList(self):
+        bbox = Gtk.HBox()
+        bbox.set_spacing(5)
+        bbox.set_border_width(10)
+        mscroll = Gtk.ScrolledWindow()
+        mscroll.set_size_request(600, 400)
+        vbox = Gtk.VBox(False, 5)
+        vbox.pack_start(mscroll, False, True, 5)
+
+
+        self.store = self.create_model()
+        self.treeView = Gtk.TreeView(self.store)
+        self.treeView.set_rules_hint(True)
+        mscroll.add(self.treeView)
+
+        self.create_columns(self.treeView)
+        tool6 = Gtk.HBox()
+        tool6.pack_start(self.button_clicked(Gtk.STOCK_ADD, _("Add"), self.on_add_clicked), False, True, 5)
+        tool6.pack_start(self.button_clicked(Gtk.STOCK_REMOVE, _("Remove"), self.on_remove_clicked), False, True, 5)
+
+        vbox.pack_start(tool6, False, True, 0)
+        bbox.add(vbox)
+        self.updateMonitorFeedsListView()
+        return bbox
+
+    def create_model(self):
+        store = Gtk.ListStore(str, str)
+        return store
+
+
+    def button_clicked(self, icon, label, callbackstr):
+        btn = Gtk.Button(label=None)
+        hbox = Gtk.HBox(False, 0)
+        btn.add(hbox)
+        img = Gtk.Image()
+        img.set_from_stock(icon, 22)
+        hbox.add(img)
+        label = Gtk.Label(label)
+        label.set_padding(3, 0)
+        hbox.add(label)
+        btn.connect("clicked", callbackstr)
+        return btn
+
+
+    def on_add_clicked(self, widget):
+        self.addMonitorFeed()
+
+    def on_remove_clicked(self, widget):
+        self.removeSelectedMonitorFeed(widget)
+
+
+    def addMonitorFeed(self):
+        result = self.showAddMonitorFeedDialog()
+        response = result[0]
+        feed = (result[1], result[2])
+        if(response == Gtk.ResponseType.OK):
+            self.configuration.addMonitorFeed(feed)
+            self.updateMonitorFeedsListView()
+
+
+    def removeSelectedMonitorFeed(self, treeiter):
+        selection = self.treeView.get_selection()
+        if (selection !=None):
+            model, treeiter = selection.get_selected()
+            if treeiter != None:
+                index = model.get_path(treeiter)
+                index2 = model.get_value(treeiter, 0)
+                index3 = model.get_value(treeiter, 1)
+                self.configuration.removeMonitorFeed(index, index2, index3)
+                self.updateMonitorFeedsListView()
+
+
+
+    def showAddMonitorFeedDialog(self):
+        dialog = Gtk.MessageDialog(
+                self,
+                0,
+                Gtk.MessageType.QUESTION,
+                Gtk.ButtonsType.OK_CANCEL,
+                None)
+
+        feed_title_entry = self.make_add_entry("Example", True)
+        hbox1 = Gtk.HBox()
+        hbox1.pack_start(feed_title_entry, False, True, 5)
+        hbox1.pack_start(self.make_add_label(_("Display name in menu"), 20, 0), False, True, 5)
+        self.action_entry = self.make_add_entry("/usr/bin/example", True)
+
+        hbox2 = Gtk.HBox()
+        hbox2.pack_start(self.action_entry, False, True, 5)
+        hbox2.pack_start(self.make_add_label(_("Command or script path"), 20, 0), False, True, 5)
+        hbox2.pack_end(self.button_clicked(Gtk.STOCK_ADD, _("Browse"), self.on_select_select), False, True, 5)
+
+
+        dialog.vbox.pack_start(hbox1, False, True, 5)
+        dialog.vbox.pack_start(hbox2, False, True, 5)
+        dialog.show_all()
+
+        response = dialog.run()
+        feed_name = feed_title_entry.get_text()
+        feed_url = self.action_entry.get_text()
+        dialog.destroy()
+        return (response, feed_name, feed_url)
+
+
+    def on_select_select(self, widget):
+        g_get_home_dir = os.path.expanduser("~")
+        dialog = Gtk.FileChooserDialog(title = _("Select App or script") , 
+			action=Gtk.FileChooserAction.OPEN,
+			buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        dialog.set_current_folder(g_get_home_dir) 
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.action_entry.set_text(dialog.get_filename())
+        elif response == Gtk.ResponseType.CANCEL: print 'Closed, no files selected'
+        dialog.destroy()
+
+
+    def updateMonitorFeedsListView(self):
+        self.store.clear()
+        for name in self.configuration.getMonitorFeeds():
+            self.store.append(name)
+
+    def create_columns(self, treeView):
+        for cell in self.CELL3:
+            column = self.make_cellrenderer(cell['content'], cell['pos'])
+            treeView.append_column(column)    
+
+    def make_add_entry(self, content, visibility):
+        entry = Gtk.Entry()
+        entry.set_text(content)
+        entry.set_visibility(visibility)
+        return entry 
+
+    def make_add_label(self, content, pad, pad2):
+        label = Gtk.Label(content)
+        label.set_padding(int(pad), int(pad2))
+        return label
+
+    def make_cellrenderer(self, content, pos):
+        ind = int(pos)
+        rendererText = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn(content, rendererText, text=ind)
+        column.set_sort_column_id(ind) 
+        return column
+
+    def Customize2(self):
+        bbox = Gtk.HBox()
+        bbox.set_spacing(5)
+        bbox.set_border_width(5)
+        mscroll = Gtk.ScrolledWindow()
+         
+        if rcx6 == True: state6 = 1
+        else: state6 = 2
+
+        if rcxc == True: state5 = 1
+        else: state5 = 2
+
+        if rcx == True: state = 1
+        else: state = 2
+
+        if rcx4 == True: state4 = 1
+        else: state4 = 2
+
+        if rcx1 == "collapsed": state3 = 1
+        else: state3 = 2
+
+        if rcx2 == "root": state2 = 1
+        else: state2 = 2
+
+        if rcx3 == "Filezilla": 
+            rc3 = True
+            rcc3 = False
+            rccc3 = False
+
+        if rcx3 == "gFTP": 
+            rcc3 = True
+            rc3 = False
+            rccc3 = False
+
+        if rcx3 == "none":
+            rccc3 = True
+            rc3 = False
+            rcc3 = False
+
+        if rcx5 == "right": 
+            ps1 = True
+            ps2 = False
+
+        if rcx5 == "left": 
+            ps1 = False
+            ps2 = True
+
+
+        vbox = Gtk.VBox(False, 5)
+        vbox.set_border_width(10)
+
+        hbox = Gtk.HBox()
+        label = self.make_label_with_markup(_("Set Position"), 0, 0)
+        hbox.pack_start(label, False, True, 5)
+        hbox.pack_start(Gtk.VSeparator(), False, True, 25)
+        radio = Gtk.RadioButton.new_with_label_from_widget(None, _("Left"))
+        hbox.pack_start(radio, False, True, 0)
+        radio.set_active(ps2)
+        radio.connect("toggled", self.toggle_radio, "left", "position")
+        radio.show()
+        hbox.pack_start(Gtk.VSeparator(), False, True, 25)
+        radio = Gtk.RadioButton.new_with_label_from_widget(radio, _("Right"))
+        hbox.pack_start(radio, False, True, 0)
+        radio.set_active(ps1)
+        radio.connect("toggled", self.toggle_radio, "right", "position")
+        radio.show()
+
+        vbox.pack_start(hbox, False, True, 5)
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+
+        sw = Gtk.Switch()
+        sw.set_active(state5 == 1)
+        sw.set_sensitive(state5 in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "show-computer")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Enable / Disable Computer Menu"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+        
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        sw = Gtk.Switch()
+        sw.set_active(state == 1)
+        sw.set_sensitive(state in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "virtualbox")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Enable / Disable VirtualBox Menu"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+        
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+
+        sw = Gtk.Switch()
+        sw.set_active(state2 == 1)
+        sw.set_sensitive(state2 in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "filesystemopen")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Open File System as Root"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+
+
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        sw = Gtk.Switch()
+        sw.set_active(state3 == 1)
+        sw.set_sensitive(state3 in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "bookmarksstate")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Show Bookmarks Collapsed (ON) / Expanded (OFF)"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        sw = Gtk.Switch()
+        sw.set_active(state4 == 1)
+        sw.set_sensitive(state4 in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "actions")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Show Actions Menu"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+        
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+        sw = Gtk.Switch()
+        sw.set_active(state6 == 1)
+        sw.set_sensitive(state6 in (1,2))
+        sw.connect('notify::active', self._on_option_toggled, "sshopen")
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.make_label_with_markup(_("Show SSH Menu"), 0, 0), True, True, 0)
+        hbox.pack_start(sw, False, False, 0)
+        vbox.pack_start(hbox, False, True, 5)
+        
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+
+        hbox = Gtk.HBox()
+        label4 = self.make_label_with_markup("FTP menu", 0, 0)
+        hbox.pack_start(label4, False, True, 5)
+        hbox.pack_start(Gtk.VSeparator(), False, True, 25)
+        radio = Gtk.RadioButton.new_with_label_from_widget(None, "Filezilla     ")
+        hbox.pack_start(radio, False, True, 0)
+        radio.set_active(rc3)
+        radio.connect("toggled", self.toggle_radio, "Filezilla", "ftpclient")
+        radio.show()
+        hbox.pack_start(Gtk.VSeparator(), False, True, 25)
+        radio = Gtk.RadioButton.new_with_label_from_widget(radio, "gFTP           ")
+        hbox.pack_start(radio, False, True, 0)
+        radio.set_active(rcc3)
+        radio.connect("toggled", self.toggle_radio, "gFTP", "ftpclient")
+        radio.show()
+        hbox.pack_start(Gtk.VSeparator(), False, True, 25)
+        radio = Gtk.RadioButton.new_with_label_from_widget(radio, "Hide FTP menu")
+        hbox.pack_start(radio, False, True, 0)
+        radio.set_active(rccc3)
+        radio.connect("toggled", self.toggle_radio, "none", "ftpclient")
+        radio.show()
+
+        vbox.pack_start(hbox, False, True, 5)
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+        hbox = Gtk.HBox()
+        vbox.pack_start(self.make_label_with_markup("Updates", 0, 0), False, True, 5)
+        hbox.pack_start(self.new_sbutton(Gtk.STOCK_REFRESH, "VirtualBox", "1"), False, True, 0)
+        hbox.pack_start(Gtk.VSeparator(), False, True, 15)
+        hbox.pack_start(self.new_sbutton(Gtk.STOCK_REFRESH, "FTP Menu ", "2"), False, True, 0)
+
+        vbox.pack_start(hbox, False, True, 5)
+        vbox.pack_start(Gtk.HSeparator(), False, True, 5)
+
+
+        label = self.make_label_with_markup(_("To take effect, click the save button to get changes instantly"), 0, 0)
+        vbox.pack_start(label, False, True, 5)
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.new_sbutton(Gtk.STOCK_APPLY, _("Save"), "3"), False, True, 0)
+        vbox.pack_start(hbox, False, True, 5)
+        mscroll.add_with_viewport(vbox)
+        bbox.add(mscroll)
+        return bbox
+
+
+opts, args = getopt.getopt(sys.argv[1:], "r:s:")
+for opt, arg in opts:
+    if opt == '-r':
+        os.system("pkexec /usr/bin/nautilus --no-desktop /")
+    if opt == '-s':
+        epmUpdater()
+        Gtk.main()
